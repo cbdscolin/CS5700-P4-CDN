@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import urllib
 
 import http.client
 from utils.util import Utils
 import os
+import urllib2
 
 
 class ReplicaServer:
@@ -21,10 +21,8 @@ class ReplicaServer:
         if local_file_path in self.cachedFiles:
             print ("Return cached file")
             return Utils.get_file_contents(self.CACHE_FOLDER + local_file_path)
-        conn = http.client.HTTPConnection("cs5700cdnorigin.ccs.neu.edu:8080")
-        conn.request("GET", path)
-        response = conn.getresponse()
-        print(response.status, response.reason)
+
+        response = urllib2.urlopen("http://cs5700cdnorigin.ccs.neu.edu:8080" + path)
 
         response_body = response.read()
         Utils.save_file(self.CACHE_FOLDER + path, response_body)
