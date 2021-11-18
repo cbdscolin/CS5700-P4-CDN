@@ -6,6 +6,7 @@ import urllib.request
 from utils.util import Utils
 import os
 from collections import OrderedDict
+import pathlib
 
 
 class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -32,7 +33,7 @@ class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 
 class ReplicaServer:
-    CACHE_FOLDER = "./replica_cache/"
+    CACHE_FOLDER = "replica_cache/"
     ORIGIN_PORT = "8080"
     ORIGIN_PROTOCOL = "http://"
 
@@ -91,14 +92,19 @@ class ReplicaServer:
 
 
 if __name__ == "__main__":
+
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument("-p", type=int)
-    args_parser.add_argument("-n", type=str)
+    args_parser.add_argument("-o", type=str)
     args_parser.parse_args()
 
     args = args_parser.parse_args()
 
     # replica_server.run("/Catherine_Howard")
-    replica_server = ReplicaServer(args.p, args.n)
+    replica_server = ReplicaServer(args.p, args.o)
 
     replica_server.start_http_server()

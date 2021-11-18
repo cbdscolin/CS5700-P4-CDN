@@ -1,0 +1,16 @@
+#!/bin/bash
+source common_vars.sh
+
+while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
+    ssh -i $keyfile $username@$ip_address chmod +x $replica_build_path/httpserver
+    ssh -i $keyfile $username@$ip_address $replica_build_path/httpserver -p $port -o $origin &
+
+    echo "Ran http-server on : $ip_address"
+done < "$replica_file"
+
+while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
+    ssh -i $keyfile $username@$ip_address chmod +x $dns_build_path/dnsserver
+    ssh -i $keyfile $username@$ip_address $dns_build_path/dnsserver -p $port -n $name &
+
+    echo "Ran dns-server on : $ip_address"
+done < "$dns_file"

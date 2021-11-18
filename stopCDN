@@ -1,0 +1,15 @@
+#!/bin/bash
+source common_vars.sh
+
+while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
+    ssh -i $keyfile $username@$ip_address pkill python -u $username
+    echo "Stopped http-server on : $ip_address"
+done < "$replica_file"
+
+
+
+while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
+    ssh -i $keyfile $username@$ip_address pkill python -u $username
+    echo "Stopped dns-server on : $ip_address"
+done < "$dns_file"
+

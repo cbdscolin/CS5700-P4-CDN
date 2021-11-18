@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from dnslib.server import BaseResolver, DNSLogger, DNSRecord, DNSServer
 from dnslib import RCODE, RR, A
 import argparse
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", default=40002)
@@ -31,11 +32,18 @@ class DNSResolver(BaseResolver):
         return reply
 
 if __name__ == "__main__":
-        resolver = DNSResolver()
-        logger = DNSLogger(prefix=False)
-        server = DNSServer(resolver,port=port,address="localhost",logger=logger)
-        server.start_thread()
-        q = DNSRecord.question("cs5700cdnorigin.ccs.neu.edu")
-        a = q.send("localhost",port)
-        print(DNSRecord.parse(a))
-        server.stop()
+
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+
+    resolver = DNSResolver()
+    logger = DNSLogger(prefix=False)
+    server = DNSServer(resolver,port=port,address="localhost",logger=logger)
+    server.start_thread()
+    q = DNSRecord.question("cs5700cdnorigin.ccs.neu.edu")
+    a = q.send("localhost",port)
+    print(DNSRecord.parse(a))
+    while True:
+        pass
+    #server.stop()
