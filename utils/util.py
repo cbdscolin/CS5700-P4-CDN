@@ -1,3 +1,6 @@
+import os
+
+
 class Utils:
 
     @staticmethod
@@ -5,7 +8,7 @@ class Utils:
         res = ""
         for log in log_lines:
             res += str(log)
-        #print res
+        # print res
 
     @staticmethod
     def save_file(filename, contents):
@@ -18,3 +21,7 @@ class Utils:
         f = open(filename, "rb")
         contents = f.read()
         return contents
+
+    @staticmethod
+    def delete_file(filename):
+        os.remove(filename)
