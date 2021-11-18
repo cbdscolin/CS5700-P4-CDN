@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Read port, origin, name, username and path to ssh key
+port=$2
+origin=$4
+name=$6
+username=$8
+keyfile=${10}
+
+# Update the path of the files that contain dns and replic IP addresses.
+dns_file=./dns-hosts.txt
+replica_file=./http-repls.txt
+
+replica_cache_folder=replica_cache
+
+# Insert the files and directories that have to be uploaded to the replica server here.
+declare -a replica_source_files
+replica_source_files=(httpserver utils $replica_cache_folder)
+
+
+# Insert the files and directories that have to be uploaded to the dns server here.
+declare -a dns_source_files
+dns_source_files=(dnsserver utils)
+
+
+echo "PORT = $port"
+echo "Origin = $origin"
+echo "Name = $name"
+echo "Username = $username"
+echo "SSH-Key path = $keyfile"
+echo "DNS IP Location = $dns_file"
+echo "Replica IP Location = $replica_file"
+
+rm -rf $replica_cache_folder
+mkdir $replica_cache_folder
+
+
+# Upload the httpserver source code.
+while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
+    for file in "${replica_source_files[@]}"; do
+        echo "File-Name = $file"
+        scp -i $keyfile -r $file $username@$ip_address:
+    done
+    echo "Copied http-server source code to : $ip_address"
+done < "$replica_file"
+
+
+exit
+# Upload the dns-server source code.
+
+
+while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
+    for file in "${dns_source_files[@]}"; do
+        echo "File-Name = $file"
+        scp -i $keyfile -r $file $username@$ip_address:
+    done
+    echo "Copied dns-server source code to : $ip_address"
+
+done < "$dns_file"
