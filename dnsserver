@@ -3,6 +3,7 @@ from dnslib.server import BaseResolver, DNSLogger, DNSRecord, DNSServer
 from dnslib import RCODE, RR, A
 import argparse
 import os
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", default=40002)
@@ -13,7 +14,7 @@ name = args.n
 
 resolver = BaseResolver()
 logger = DNSLogger(prefix=False)
-server = DNSServer(resolver,port=port,address="localhost",logger=logger)
+server = DNSServer(resolver,port=port,logger=logger)
 
 class DNSResolver(BaseResolver):
 
@@ -39,11 +40,8 @@ if __name__ == "__main__":
 
     resolver = DNSResolver()
     logger = DNSLogger(prefix=False)
-    server = DNSServer(resolver,port=port,address="localhost",logger=logger)
+    server = DNSServer(resolver,port=port,logger=logger)
     server.start_thread()
-    q = DNSRecord.question("cs5700cdnorigin.ccs.neu.edu")
-    a = q.send("localhost",port)
-    print(DNSRecord.parse(a))
     while True:
-        pass
+        time.sleep(1)
     #server.stop()
