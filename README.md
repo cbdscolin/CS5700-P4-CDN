@@ -1,3 +1,11 @@
-# CS5700-P4-CDN
+# CS5700-P5-CDN
 
-Our high-level approach was to implement the DNS server and the HTTP server separately initially. For the DNS server, we researched dnslib, and implemented a basic DNS server with a DNS resolver. This DNS resolver is designed to take in requests for the origin server, cs5700cdnorigin.ccs.neu.edu, and respond with a round robin approach given the list of possible replica servers. 
+Our high-level approach was to implement the DNS server and the HTTP server separately initially. For the DNS server, we researched dnslib, and implemented a basic DNS server with a DNS resolver. This DNS resolver is designed to take in requests for the origin server, cs5700cdnorigin.ccs.neu.edu, and respond with a round robin DNS approach given the list of possible replica servers. At the moment, there is only one replica server, so it will only return that IP address for every A query for cs5700cdnorigin.ccs.neu.edu. 
+
+For the HTTP server, we implemented a basic HTTP server, that takes a GET request from the client for a specific page, and then queries the origin server for that specific page. Once it gets that page, it will then return it in HTML format to the user. The HTTP server also includes a basic LRU (least recently used) caching algorithm that caches each webpage it sees, removing the least recently used page when it runs out of space (the space is determined by a predetermined number). If the page the client asks for is in the cache, it will not query the origin server, and will rather return the cached copy to the client. The HTTP server is also designed to respond to requests for /grading/beacon with a 204 response code. 
+
+We then designed the three scripts for starting, running, and stopping these servers (deployCDN, runCDN, and stopCDN, respectively). These scripts are simple bash scripts that copy files to the remote servers, run the dns and http server code, and then kill the processes when they are no longer needed. 
+
+We ran into some challenges when designing this system, such as dealing the specific requirements of dnslib (such as using the "RR" class to denote a translation of a name into an IP). We also found it challenging when dealing with image urls in the http server requests. 
+
+John worked primarily on the DNS server implementation, and Colin worked primarily on the HTTP server implementation. Colin designed the deployCDN, runCDN, and stopCDN scripts, and John made bug fixes for full functionality with the dig and wget commands. Both Colin and John created documentation for the entire project.
