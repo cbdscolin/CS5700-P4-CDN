@@ -8,8 +8,8 @@ username=$8
 keyfile=${10}
 
 # Update the path of the files that contain dns and replic IP addresses.
-dns_file=./dns-hosts.txt
-replica_file=./http-repls.txt
+dns_file=/course/cs5700f21/dns-hosts.txt
+replica_file=/course/cs5700f21/http-repls.txt
 build_path=/home/$username/test
 replica_build_path=$build_path/replica_source
 dns_build_path=$build_path/dns_source
