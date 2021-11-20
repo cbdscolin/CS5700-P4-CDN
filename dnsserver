@@ -16,6 +16,7 @@ resolver = BaseResolver()
 logger = DNSLogger(prefix=False)
 server = DNSServer(resolver,port=port,logger=logger)
 
+# The resolver used to translate names into IP addresses
 class DNSResolver(BaseResolver):
 
     def __init__(self):
@@ -32,6 +33,7 @@ class DNSResolver(BaseResolver):
             self.curr_address += 1
         return reply
 
+# Start the server to run infinitely, using the resolver designed above
 if __name__ == "__main__":
 
     abspath = os.path.abspath(__file__)
