@@ -71,7 +71,7 @@ class ReplicaServer:
 
     # Save the web page in cache by updating the dictionary and also save the contents to a file in the unicode format.
     def mark_file_in_cache(self, file_name, contents):
-        Utils.save_file(self.CACHE_FOLDER + file_name, contents)
+        Utils.save_file_after_compression(self.CACHE_FOLDER + file_name, contents)
         self.cachedFiles[file_name] = True
 
         # If the size of the cache is greater than capacity remove the least recently used page from the disk.
@@ -79,11 +79,11 @@ class ReplicaServer:
             file_to_delete, _ = self.cachedFiles.popitem(last=False)
             Utils.delete_file(self.CACHE_FOLDER + file_to_delete)
 
-    # Fetch the cached web page from the disk and push it to the end of the dictionary to indicate it was accessed.
+    # Fetch the cached web page data in bytes from the disk and push it to the end of the dictionary to indicate it was accessed.
     def get_cached_file(self, file_name):
         self.cachedFiles.pop(file_name)
         self.cachedFiles[file_name] = True
-        return Utils.get_file_contents(self.CACHE_FOLDER + file_name)
+        return Utils.get_file_contents_after_decompression(self.CACHE_FOLDER + file_name)
 
     # Function returns cached web page if exists or fetches the page from origin and returns the html headers, body
     # and response code.
@@ -107,6 +107,7 @@ class ReplicaServer:
             print(ex)
             return 404, None, ""
 
+        # Get response in bytes
         response_body = response.read()
         # Cache this web page.
         self.mark_file_in_cache(local_file_path, response_body)
