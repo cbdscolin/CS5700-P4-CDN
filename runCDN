@@ -2,21 +2,31 @@
 source common_vars.sh
 
 # Run the http server
-while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
-    ssh -i $keyfile $username@$ip_address /bin/bash << EOF
+for ip_address in $(cat $replica_file)
+do
+    if [[ -z "$ip_address" ]]; then
+      continue
+    fi
+
+    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address /bin/bash << EOF
         chmod +x $replica_build_path/httpserver
         nohup $replica_build_path/httpserver -p $port -o $origin > /dev/null 2>/dev/null &   
 EOF
 
     echo "Ran http-server on : $ip_address"
-done < "$replica_file"
+done
 
 # Run the dns server
-while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
-    ssh -i $keyfile $username@$ip_address /bin/bash << EOF
+for ip_address in $(cat $dns_file)
+do
+    if [[ -z "$ip_address" ]]; then
+      continue
+    fi
+
+    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address /bin/bash << EOF
         chmod +x $dns_build_path/dnsserver
         nohup $dns_build_path/dnsserver -p $port -n $name > /dev/null 2>/dev/null &   
 EOF
 
     echo "Ran dns-server on : $ip_address"
-done < "$dns_file"
+done

@@ -1,15 +1,24 @@
 #!/bin/bash
 source common_vars.sh
 
-while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
-    ssh -i $keyfile $username@$ip_address pkill python -u $username
+for ip_address in $(cat $replica_file)
+do
+    if [[ -z "$ip_address" ]]; then
+      continue
+    fi
+
+    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address pkill python -u $username
     echo "Stopped http-server on : $ip_address"
-done < "$replica_file"
+done
 
 
+for ip_address in $(cat $dns_file)
+do
+    if [[ -z "$ip_address" ]]; then
+      continue
+    fi
 
-while IFS= read -r ip_address || [[ -n "$ip_address" ]]; do
-    ssh -i $keyfile $username@$ip_address pkill python -u $username
+    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address pkill python -u $username
     echo "Stopped dns-server on : $ip_address"
-done < "$dns_file"
+done
 

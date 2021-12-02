@@ -48,7 +48,7 @@ class ReplicaServer:
     GRADING_BEACON_PATH = "/grading/beacon"
 
     # Max number of pages cached in the disk.
-    MAX_CACHE_SIZE = 10
+    MAX_CACHE_SIZE = 180
 
     def __init__(self, port, origin):
         # Used to handle caching of web pages by using least recently used algorithm.

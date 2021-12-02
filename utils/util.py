@@ -32,12 +32,14 @@ class Utils:
     def get_file_contents(filename):
         f = open(filename, "rb")
         contents = f.read()
+        f.close()
         return contents
 
     @staticmethod
     def get_file_contents_after_decompression(filename):
         f = open(filename, "rb")
         compressed_contents_bytes = f.read()
+        f.close()
         decompressed_contents = Utils.decompress(compressed_contents_bytes)
         return decompressed_contents
 
