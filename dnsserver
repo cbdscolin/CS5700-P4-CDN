@@ -4,6 +4,8 @@ from dnslib import RCODE, RR, A
 import argparse
 import os
 import time
+from utils.util import Utils
+from geo_ip_locator import GeoIPLocator
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", default=40002)
@@ -15,23 +17,29 @@ name = args.n
 resolver = BaseResolver()
 logger = DNSLogger(prefix=False)
 server = DNSServer(resolver,port=port,logger=logger)
+geo_ip_locator = GeoIPLocator()
+
 
 # The resolver used to translate names into IP addresses
 class DNSResolver(BaseResolver):
 
     def __init__(self):
-        self.addresses = open("http-repls.txt").readlines()
         self.curr_address = 0
 
     def resolve(self,request,handler):
-        reply = request.reply()
-        a = RR(name, rdata=A(self.addresses[self.curr_address]), ttl=0)
-        reply.add_answer(a)
-        if self.curr_address == len(self.addresses)-1:
-            self.curr_address = 0
+        if handler and handler.client_address:
+            print("Client address ", handler.client_address)
+            closest_ip = geo_ip_locator.get_closest_ip(handler.client_address[0])
         else:
-            self.curr_address += 1
+            print("Empty client address")
+            closest_ip = geo_ip_locator.replica_IPs[self.curr_address]
+            self.curr_address = (self.curr_address + 1) % len(geo_ip_locator.replica_IPs)
+
+        reply = request.reply()
+        a = RR(name, rdata=A(closest_ip), ttl=0)
+        reply.add_answer(a)
         return reply
+
 
 # Start the server to run infinitely, using the resolver designed above
 if __name__ == "__main__":
@@ -42,7 +50,7 @@ if __name__ == "__main__":
 
     resolver = DNSResolver()
     logger = DNSLogger(prefix=False)
-    server = DNSServer(resolver,port=port,logger=logger)
+    server = DNSServer(resolver, port=port,logger=logger)
     server.start_thread()
     while True:
         time.sleep(1)

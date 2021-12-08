@@ -1,6 +1,7 @@
 import os
 
 import zlib
+from math import sin, cos, sqrt, atan2, radians
 
 
 class Utils:
@@ -56,3 +57,21 @@ class Utils:
     def decompress(compressed_contents_bytes):
         decompressed_contents_bytes = zlib.decompress(compressed_contents_bytes)
         return decompressed_contents_bytes
+
+    '''
+    Reference: https://stackoverflow.com/questions/19412462/getting-distance-between-two-points-based-on-latitude-longitude
+    '''
+    @staticmethod
+    def get_distance_between_coordinates(ord1, ord2):
+        lat1 = radians(ord1[0])
+        lon1 = radians(ord1[1])
+        lat2 = radians(ord2[0])
+        lon2 = radians(ord2[1])
+
+        long_diff = lon2 - lon1
+        latt_diff = lat2 - lat1
+
+        a = (sin(latt_diff / 2) ** 2) + cos(lat1) * cos(lat2) * sin(long_diff / 2)**2
+        distance = 2 * atan2(sqrt(a), sqrt(1 - a)) * 6373.0
+
+        return distance
