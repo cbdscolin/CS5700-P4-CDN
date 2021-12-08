@@ -68,10 +68,13 @@ class Utils:
         lat2 = radians(ord2[0])
         lon2 = radians(ord2[1])
 
+        if lat1 is None or lat2 is None or lon1 is None or lon2 is None:
+            raise Exception("Invalid locations used to calculate distance")
+
         long_diff = lon2 - lon1
         latt_diff = lat2 - lat1
 
         a = (sin(latt_diff / 2) ** 2) + cos(lat1) * cos(lat2) * sin(long_diff / 2)**2
         distance = 2 * atan2(sqrt(a), sqrt(1 - a)) * 6373.0
 
-        return distance
+        return abs(distance)
