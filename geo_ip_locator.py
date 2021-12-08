@@ -1,6 +1,6 @@
 import math
+import urllib.request
 
-import requests
 from utils.util import Utils
 
 
@@ -22,20 +22,36 @@ class GeoIPLocator:
 
         # Cache the location of replica IP addresses. We will use them later to find the closest replica to the client.
         # In case of rate limit or other errors switch to round robin method to redirect clients.
-        try:
-            for ip in self.replica_IPs:
-                ip_details = self.get_IP_details(ip)
-                self.IP_locations.append((ip_details['latitude'], ip_details['longitude']))
-        except:
-            self.IP_locations = None
+        # try:
+        #     for ip in self.replica_IPs:
+        #         ip_details = self.get_IP_details(ip)
+        #         self.IP_locations.append((ip_details['latitude'], ip_details['longitude']))
+        # except:
+        #     self.IP_locations = None
+
+        self.IP_locations = [(33.844, -84.4784), (37.5625, -122.0004), (50.1188, 8.6843), (35.6887, 139.745), (-33.8672, 151.1997), (19.0748, 72.8856)]
 
     # Get geological location of the IP address passed.
     def get_IP_details(self, ip_address):
-        output = requests.get(self.API_URL + ip_address + "?apikey=" + self.API_KEYS[self.api_key_index])
+
+        request = urllib.request.Request(self.API_URL + ip_address + "?apikey=" + self.API_KEYS[self.api_key_index])
+        output = urllib.request.urlopen(request)
+
         # In case the API fails to get the location data then throw an exception.
-        if output.status_code != 200:
+        if output.status != 200:
             raise Exception("Failed to get location details for " + ip_address)
-        return output.json()
+        res = {}
+
+        for line in output.read().decode().split(","):
+            if "latitude" in line:
+                res["latitude"] = float(line.split(":")[1])
+                pass
+            if "longitude" in line:
+                res["longitude"] = float(line.split(":")[1])
+                pass
+        output.close()
+
+        return res
 
     # Get the closest replica to the IP address passed in the parameter.
     def get_closest_ip(self, source_ip):

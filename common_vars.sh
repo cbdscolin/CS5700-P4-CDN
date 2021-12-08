@@ -23,7 +23,7 @@ replica_source_files=(httpserver utils $replica_cache_folder)
 
 # Insert the files and directories that have to be uploaded to the dns server here.
 declare -a dns_source_files
-dns_source_files=(dnsserver utils http-repls.txt)
+dns_source_files=(dnsserver utils http-repls.txt geo_ip_locator.py)
 
 
 echo "PORT = $port"

@@ -14,9 +14,9 @@ args = parser.parse_args()
 port = int(args.p)
 name = args.n
 
-resolver = BaseResolver()
-logger = DNSLogger(prefix=False)
-server = DNSServer(resolver, port=port, logger=logger)
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 geo_ip_locator = GeoIPLocator()
 
 
@@ -34,9 +34,9 @@ class DNSResolver(BaseResolver):
         If we fail to find the closest IP then redirect client towards the replica based on round-robin algorithm.
         """
         try:
-            print("Client address ", handler.client_address)
             closest_ip = geo_ip_locator.get_closest_ip(handler.client_address[0])
-        except:
+        except Exception as ex:
+            print ("Resolve exception: ", ex)
             closest_ip = geo_ip_locator.replica_IPs[self.curr_address]
             # Increment the index to mimic round robin algorithm.
             self.curr_address = (self.curr_address + 1) % len(geo_ip_locator.replica_IPs)
@@ -50,14 +50,8 @@ class DNSResolver(BaseResolver):
 # Start the server to run infinitely, using the resolver designed above
 if __name__ == "__main__":
 
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    os.chdir(dname)
-
     resolver = DNSResolver()
     logger = DNSLogger(prefix=False)
     server = DNSServer(resolver, port=port, logger=logger)
-    server.start_thread()
-    while True:
-        time.sleep(1)
+    server.start()
     # server.stop()

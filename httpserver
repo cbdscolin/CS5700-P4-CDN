@@ -6,7 +6,6 @@ import urllib.request
 from utils.util import Utils
 import os
 from collections import OrderedDict
-import pathlib
 
 # Custom class to handle http request.
 class CustomHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -109,6 +108,8 @@ class ReplicaServer:
 
         # Get response in bytes
         response_body = response.read()
+        response.close()
+
         # Cache this web page.
         self.mark_file_in_cache(local_file_path, response_body)
         return 200, None, response_body
