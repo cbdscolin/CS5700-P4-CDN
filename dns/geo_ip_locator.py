@@ -2,6 +2,7 @@ from urllib.error import HTTPError
 
 import math
 import urllib.request
+import time
 
 from utils.util import Utils
 
@@ -18,6 +19,7 @@ class GeoIPLocator:
     def __init__(self, https_replica_file_location):
         self.replica_IPs = []
         self.IP_locations = []
+        self.client_to_replica_distances = {}
 
         # Read all the replica IP addresses from the file on the server.
         for ip in Utils.get_file_contents(https_replica_file_location).decode().split("\n"):
@@ -66,18 +68,23 @@ class GeoIPLocator:
 
     # Get the closest replica to the IP address passed in the parameter.
     def get_closest_ip(self, source_ip):
-        closest_ip_index = -1
-        source_ip_details = self.get_IP_details(source_ip)
+        # Check if client has already been seen
+        if client in client_to_replica_distances:
+            closest_ip_index = client_to_replica_distances[source_ip][1][0][1]
+            return self.replica_IPs[closest_ip_index]
+        # If this is the first time seeing the client, calculate the distances between
+        # the client and every replica
+        distances = []
         # Get location of the source IP address
+        source_ip_details = self.get_IP_details(source_ip)
         source_ip_location = (source_ip_details['latitude'], source_ip_details['longitude'])
-        lowest_dist = math.inf
         for ii, dest_ip_loc in enumerate(self.IP_locations):
             # Calculate the distance between source & destination.
             cur_dis = Utils.get_distance_between_coordinates(source_ip_location, dest_ip_loc)
-            # If the distance is lower than the previous lowest distance then the current IP is closest to the source
-            if lowest_dist > cur_dis:
-                lowest_dist = cur_dis
-                closest_ip_index = ii
+            distances.append((cur_dis, ii))
+
+        distances = sorted(distances)
+        self.client_to_replica_distances[source_ip] = (time.time(), distances)
 
         # Return the closest replica's IP address.
-        return self.replica_IPs[closest_ip_index]
+        return self.replica_IPs[distances[0][1]]
