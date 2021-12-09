@@ -69,8 +69,8 @@ class GeoIPLocator:
     # Get the closest replica to the IP address passed in the parameter.
     def get_closest_ip(self, source_ip):
         # Check if client has already been seen
-        if client in client_to_replica_distances:
-            closest_ip_index = client_to_replica_distances[source_ip][1][0][1]
+        if source_ip in self.client_to_replica_distances:
+            closest_ip_index = self.client_to_replica_distances[source_ip][1][0][1]
             return self.replica_IPs[closest_ip_index]
         # If this is the first time seeing the client, calculate the distances between
         # the client and every replica
@@ -85,6 +85,8 @@ class GeoIPLocator:
 
         distances = sorted(distances)
         self.client_to_replica_distances[source_ip] = (time.time(), distances)
+        if len(self.client_to_replica_distances.keys()) > 1000:
+            del self.client_to_replica_distances[self.client_to_replica_distances.keys()[0]]
 
         # Return the closest replica's IP address.
         return self.replica_IPs[distances[0][1]]
