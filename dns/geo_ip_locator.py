@@ -15,12 +15,12 @@ class GeoIPLocator:
     API_KEY_INDEX = 0
 
     # Constructor for the class
-    def __init__(self):
+    def __init__(self, https_replica_file_location):
         self.replica_IPs = []
         self.IP_locations = []
 
         # Read all the replica IP addresses from the file on the server.
-        for ip in Utils.get_file_contents("./http-repls.txt").decode().split("\n"):
+        for ip in Utils.get_file_contents(https_replica_file_location).decode().split("\n"):
             ip = ip.strip()
             if ip:
                 self.replica_IPs.append(ip)
