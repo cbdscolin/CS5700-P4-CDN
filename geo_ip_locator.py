@@ -1,3 +1,5 @@
+from urllib.error import HTTPError
+
 import math
 import urllib.request
 
@@ -7,13 +9,16 @@ from utils.util import Utils
 class GeoIPLocator:
     API_URL = "https://api.freegeoip.app/json/"
 
-    API_KEYS = ["cbfc9480-57a2-11ec-8ad8-833775a8b221"]
+    API_KEYS = ["cbfc9480-57a2-11ec-8ad8-833775a8b221", "d5599360-588e-11ec-afec-95107239d823",
+                "0917de70-588f-11ec-89a3-3fc3e9907aec", "24884a50-588f-11ec-b303-3fbfa2ec5ff0"]
+
+    API_KEY_INDEX = 0
 
     # Constructor for the class
     def __init__(self):
         self.replica_IPs = []
         self.IP_locations = []
-        self.api_key_index = 0
+
         # Read all the replica IP addresses from the file on the server.
         for ip in Utils.get_file_contents("./http-repls.txt").decode().split("\n"):
             ip = ip.strip()
@@ -22,23 +27,29 @@ class GeoIPLocator:
 
         # Cache the location of replica IP addresses. We will use them later to find the closest replica to the client.
         # In case of rate limit or other errors switch to round robin method to redirect clients.
-        # try:
-        #     for ip in self.replica_IPs:
-        #         ip_details = self.get_IP_details(ip)
-        #         self.IP_locations.append((ip_details['latitude'], ip_details['longitude']))
-        # except:
-        #     self.IP_locations = None
+        try:
+            for ip in self.replica_IPs:
+                ip_details = self.get_IP_details(ip)
+                self.IP_locations.append((ip_details['latitude'], ip_details['longitude']))
+        except:
+            self.IP_locations = None
 
-        self.IP_locations = [(33.844, -84.4784), (37.5625, -122.0004), (50.1188, 8.6843), (35.6887, 139.745), (-33.8672, 151.1997), (19.0748, 72.8856)]
 
     # Get geological location of the IP address passed.
     def get_IP_details(self, ip_address):
 
-        request = urllib.request.Request(self.API_URL + ip_address + "?apikey=" + self.API_KEYS[self.api_key_index])
-        output = urllib.request.urlopen(request)
+        request = urllib.request.Request(self.API_URL + ip_address + "?apikey=" + self.API_KEYS[GeoIPLocator.API_KEY_INDEX])
+        output = None
+        try:
+            output = urllib.request.urlopen(request)
+        except HTTPError as geo_ip_ex:
+            print(geo_ip_ex)
+            if geo_ip_ex.code >= 400:
+                GeoIPLocator.API_KEY_INDEX = (GeoIPLocator.API_KEY_INDEX + 1) % len(self.API_KEYS)
+
 
         # In case the API fails to get the location data then throw an exception.
-        if output.status != 200:
+        if output is None or output.status != 200:
             raise Exception("Failed to get location details for " + ip_address)
         res = {}
 
