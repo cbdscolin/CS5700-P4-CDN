@@ -1,12 +1,12 @@
 #!/bin/bash
 source common_vars.sh
 
-echo "Creating build directory and cache directory"
+printf "Creating build directory and cache directory\n"
 
 rm -rf $replica_cache_folder
 mkdir $replica_cache_folder
 
-echo "Copying source code"
+printf "Copying source code\n\n"
 
 # Upload the http-server source code.
 for ip_address in $(cat $replica_file)
@@ -16,16 +16,27 @@ do
       continue
     fi
 
-    ssh -o "StrictHostKeyChecking no" -i  $keyfile $username@$ip_address rm -rf $replica_build_path
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address mkdir -p $replica_build_path
+    printf "Creating replica build directory in $ip_address\n"
 
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address mkdir $replica_build_path/$replica_cache_folder
+    until ssh -o "StrictHostKeyChecking no" -i  $keyfile $username@$ip_address rm -rf $replica_build_path ; do
+      sleep 1
+    done
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address mkdir -p $replica_build_path ; do
+      sleep 1
+    done
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address mkdir $replica_build_path/$replica_cache_folder ; do
+      sleep 1
+    done
 
     for file in "${replica_source_files[@]}"; do
-        echo "Copying $file to $ip_address"
-        scp -o "StrictHostKeyChecking no" -i $keyfile -r $file $username@$ip_address:$replica_build_path
+        printf "Copying $file to $ip_address\n"
+        until scp -o "StrictHostKeyChecking no" -i $keyfile -r $file $username@$ip_address:$replica_build_path ; do
+          sleep 1
+        done
     done
-    echo "Copied http-server source code to : $ip_address"
+    printf "Copied http-server source code to : $ip_address\n\n"
 done
 
 # Upload the dns-server source code.
@@ -36,13 +47,22 @@ do
       continue
     fi
 
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address rm -rf $dns_build_path
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address mkdir -p $dns_build_path
+    printf "Creating dns build directory in $ip_address\n"
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address rm -rf $dns_build_path ; do
+      sleep 1
+    done
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address mkdir -p $dns_build_path ; do
+      sleep 1
+    done
 
     for file in "${dns_source_files[@]}"; do
-        echo "Copying $file to $ip_address"
-        scp -o "StrictHostKeyChecking no" -i $keyfile -r $file $username@$ip_address:$dns_build_path
+        printf "Copying $file to $ip_address\n"
+        until scp -o "StrictHostKeyChecking no" -i $keyfile -r $file $username@$ip_address:$dns_build_path ; do
+          sleep 1
+        done
     done
-    echo "Copied dns-server source code to : $ip_address"
+    printf "Copied dns-server source code to : $ip_address\n\n"
 
 done

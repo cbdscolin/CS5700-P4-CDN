@@ -8,12 +8,19 @@ do
       continue
     fi
 
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address /bin/bash << EOF
-        chmod +x $replica_build_path/httpserver
-        nohup $replica_build_path/httpserver -p $port -o $origin > /dev/null 2>/dev/null &   
-EOF
+    printf "Running http-server on : $ip_address\n"
 
-    echo "Ran http-server on : $ip_address"
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address chmod +x $replica_build_path/httpserver;
+    do
+        sleep 1
+    done
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address nohup $replica_build_path/httpserver -p $port -o $origin > /dev/null 2>/dev/null &
+    do
+        sleep 1
+    done
+
+    printf "Ran http-server on : $ip_address\n\n"
 done
 
 # Run the dns server
@@ -23,10 +30,17 @@ do
       continue
     fi
 
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address /bin/bash << EOF
-        chmod +x $dns_build_path/dnsserver
-        nohup $dns_build_path/dnsserver -p $port -n $name > /dev/null 2>/dev/null &   
-EOF
+    printf "Running dns-server on : $ip_address\n"
 
-    echo "Ran dns-server on : $ip_address"
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address chmod +x $dns_build_path/dnsserver;
+    do
+        sleep 1
+    done
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address nohup $dns_build_path/dnsserver -p $port -n $name > /dev/null 2>/dev/null &
+    do
+        sleep 1
+    done
+
+    printf "Ran dns-server on : $ip_address\n\n"
 done

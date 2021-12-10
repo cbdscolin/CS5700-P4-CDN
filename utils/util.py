@@ -25,7 +25,6 @@ class Utils:
         f = open(filename, "wb")
         compressed_contents_bytes = Utils.compress(contents_bytes)
         after_len = len(compressed_contents_bytes)
-        Utils.print_logs("Compression: Before = ", before_len, " After = ", after_len)
         f.write(compressed_contents_bytes)
         f.close()
 

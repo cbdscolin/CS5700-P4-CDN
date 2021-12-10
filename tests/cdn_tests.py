@@ -1,7 +1,7 @@
 import os
 import unittest
 import urllib
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from dns.dns_server import DNSResolver
 import dns.dns_server
@@ -100,7 +100,13 @@ class CDNTests(unittest.TestCase):
         for replica_ip in self.all_replica_ips:
             request = urllib.request.Request("http://" + replica_ip + ":40002/grading/beacon")
             request.add_header("Accept-Encoding", "utf-8")
-            response = urllib.request.urlopen(request)
+            response = None
+            try:
+                response = urllib.request.urlopen(request)
+            except Exception as ex:
+                print(ex)
+                print("replica: " + replica_ip)
+                raise ex
 
             self.assertIsNotNone(response)
             self.assertEqual(response.code, 204)
@@ -110,7 +116,13 @@ class CDNTests(unittest.TestCase):
         for replica_ip in self.all_replica_ips:
             request = urllib.request.Request("http://" + replica_ip + ":40002/Chief_Justice_of_the_United_States")
             request.add_header("Accept-Encoding", "utf-8")
-            response = urllib.request.urlopen(request)
+            response = None
+            try:
+                response = urllib.request.urlopen(request)
+            except Exception as ex:
+                print(ex)
+                print("replica: " + replica_ip)
+                raise ex
 
             actual_content = response.read()
             self.assertIsNotNone(response)
@@ -149,6 +161,23 @@ class CDNTests(unittest.TestCase):
                     response.close()
             else:
                 print("Invalid line: ", page_no, line)
+
+    @unittest.skip("Skipping test that expects dns and repica servers to be stopped")
+    def test_dns_and_replicas_stopped(self):
+        resp = os.popen("dig @173.255.237.185 -p 40002")
+        out = resp.read()
+        resp.close()
+        self.assertTrue("connection timed out; no servers could be reached" in out)
+
+        for replica_ip in self.all_replica_ips:
+            request = urllib.request.Request("http://" + replica_ip + ":40002/Chief_Justice_of_the_United_States")
+            request.add_header("Accept-Encoding", "utf-8")
+            try:
+                urllib.request.urlopen(request)
+                self.fail("Connection should fail for the replica " + replica_ip)
+            except URLError as ex:
+                self.assertTrue(ex.reason.strerror, "Connection refused")
+
 
 
 if __name__ == '__main__':

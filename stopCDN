@@ -6,9 +6,13 @@ do
     if [[ -z "$ip_address" ]]; then
       continue
     fi
+    printf "Stopping http-server on : $ip_address\n"
 
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address pkill python -u $username
-    echo "Stopped http-server on : $ip_address"
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address pkill python -u $username || true;
+    do
+        sleep 1
+    done
+    printf "Stopped http-server on : $ip_address\n\n"
 done
 
 
@@ -18,7 +22,12 @@ do
       continue
     fi
 
-    ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address pkill python -u $username
-    echo "Stopped dns-server on : $ip_address"
+    printf "Stopping dns-server on : $ip_address\n"
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address pkill python -u $username || true ;
+    do
+        sleep 1
+    done
+    printf "Stopped dns-server on : $ip_address\n\n"
 done
 
