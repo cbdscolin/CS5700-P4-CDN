@@ -4,6 +4,7 @@ import math
 import urllib.request
 import time
 
+from dns.active_measure import LoadMeasurer
 from utils.util import Utils
 
 
@@ -15,11 +16,14 @@ class GeoIPLocator:
 
     API_KEY_INDEX = 0
 
+    DNS_IP_FILE_LOCATION = "./dns-hosts.txt"
+
     # Constructor for the class
     def __init__(self, https_replica_file_location):
         self.replica_IPs = []
         self.IP_locations = []
         self.client_to_replica_distances = {}
+        self.dns_location = None
 
         # Read all the replica IP addresses from the file on the server.
         for ip in Utils.get_file_contents(https_replica_file_location).decode().split("\n"):
@@ -36,6 +40,7 @@ class GeoIPLocator:
         except:
             self.IP_locations = None
 
+        self.load_measurer = None
 
     # Get geological location of the IP address passed.
     def get_IP_details(self, ip_address):
@@ -66,12 +71,21 @@ class GeoIPLocator:
 
         return res
 
+    def remove_bad_replicas_from_closest(self, distance_index_pairs):
+        if self.load_measurer is None:
+            self.load_measurer = LoadMeasurer(self, 300)
+
+        bad_replicas = self.load_measurer.get_bad_replicas()
+        for _, index in distance_index_pairs:
+            if index not in bad_replicas:
+                return self.replica_IPs[index]
+        return self.replica_IPs[distance_index_pairs[0][1]]
+
     # Get the closest replica to the IP address passed in the parameter.
     def get_closest_ip(self, source_ip):
         # Check if client has already been seen
         if source_ip in self.client_to_replica_distances:
-            closest_ip_index = self.client_to_replica_distances[source_ip][1][0][1]
-            return self.replica_IPs[closest_ip_index]
+            return self.remove_bad_replicas_from_closest(self.client_to_replica_distances[source_ip][1])
         # If this is the first time seeing the client, calculate the distances between
         # the client and every replica
         distances = []
@@ -89,4 +103,4 @@ class GeoIPLocator:
             del self.client_to_replica_distances[self.client_to_replica_distances.keys()[0]]
 
         # Return the closest replica's IP address.
-        return self.replica_IPs[distances[0][1]]
+        return self.remove_bad_replicas_from_closest(self.client_to_replica_distances[source_ip][1])

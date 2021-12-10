@@ -1,8 +1,12 @@
 import os
+import threading
+import time
 import unittest
 import urllib
+import socket
 from urllib.error import HTTPError, URLError
 
+from dns.active_measure import LoadMeasurer
 from dns.dns_server import DNSResolver
 import dns.dns_server
 from dns.geo_ip_locator import GeoIPLocator
@@ -140,7 +144,7 @@ class CDNTests(unittest.TestCase):
             except HTTPError as ex:
                 self.assertEqual(ex.code, 404)
 
-    @unittest.skip("Skipping test that downloads all pages") # Uncomment this to run this test case.
+    @unittest.skip("Skipping test that downloads all pages")  # Uncomment this to run this test case.
     def test_download_all_pages(self):
         all_pages_list = Utils.get_file_contents("./test_resources/pageviews.csv").decode().split("\r\n")
         for page_no, line in enumerate(all_pages_list):
@@ -177,6 +181,79 @@ class CDNTests(unittest.TestCase):
                 self.fail("Connection should fail for the replica " + replica_ip)
             except URLError as ex:
                 self.assertTrue(ex.reason.strerror, "Connection refused")
+
+    @staticmethod
+    def load_server_ip(tId, replica_ip):
+        print("Running thread", tId, replica_ip)
+        for i in range(9900000):
+            request = urllib.request.Request("http://" + replica_ip + ":40002/")
+            request.add_header("Accept-Encoding", "utf-8")
+
+            try:
+                urllib.request.urlopen(request)
+            except:
+                pass
+        print("thread ", tId, " completed")
+
+    def test_response_time(self):
+        replica_ip = self.all_replica_ips[0]
+
+        thread_count = 100
+        for i in range(thread_count):
+            thread = threading.Thread(target=CDNTests.load_server_ip, args=(i, replica_ip))
+            thread.start()
+        time.sleep(6)
+
+        # request = urllib.request.Request("http://" + replica_ip + ":40002/")
+        # request.add_header("Accept-Encoding", "utf-8")
+        start = time.time()
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((replica_ip, 40002))
+        s.sendall('Hello, world'.encode())
+        s.close()
+        end = time.time()
+        # try:
+        #     urllib.request.urlopen(request)
+        #     fail("Failed")
+        # except:
+        #     pass
+
+        print("Time taken: ", (end - start))
+        time.sleep(100)
+
+    def test_should_check_load(self):
+        locator = GeoIPLocator("./../http-repls.txt")
+        load_measurer = LoadMeasurer(locator, 4)
+        self.assertFalse(load_measurer.should_check_load())
+        time.sleep(2)
+        self.assertFalse(load_measurer.should_check_load())
+        time.sleep(3)
+        self.assertTrue(load_measurer.should_check_load())
+
+    def test_dns_with_bad_replicas(self):
+        locator = GeoIPLocator("./../http-repls.txt")
+
+        req, hand = self.create_dns_request("99.79.40.102")
+        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
+        self.assertEqual(str(req.objs[0].rdata), "45.33.99.146")
+
+        locator.load_measurer.bad_replicas = [0, 1]
+
+        req, hand = self.create_dns_request("99.79.40.102")
+        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
+        self.assertEqual(str(req.objs[0].rdata), "139.162.142.68")
+
+        locator.load_measurer.bad_replicas = [0, 1, 2, 3]
+
+        req, hand = self.create_dns_request("99.79.40.102")
+        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
+        self.assertEqual(str(req.objs[0].rdata), "172.105.36.32")
+
+        locator.load_measurer.bad_replicas = [0, 1, 2, 3, 4, 5]
+
+        req, hand = self.create_dns_request("99.79.40.102")
+        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
+        self.assertEqual(str(req.objs[0].rdata), "45.33.99.146")
 
 
 
