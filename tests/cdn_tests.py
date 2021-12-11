@@ -56,6 +56,7 @@ class CDNTests(unittest.TestCase):
         dns_handler = DNSH()
         return dns_request, dns_handler
 
+    @unittest.skip("Skipping test ")  # Uncomment this to run this test case.
     def test_dns_response(self):
         locator = GeoIPLocator("./../http-repls.txt")
 
@@ -195,6 +196,7 @@ class CDNTests(unittest.TestCase):
                 pass
         print("thread ", tId, " completed")
 
+    @unittest.skip("Skip load test")
     def test_response_time(self):
         replica_ip = self.all_replica_ips[0]
 
@@ -204,13 +206,7 @@ class CDNTests(unittest.TestCase):
             thread.start()
         time.sleep(6)
 
-        # request = urllib.request.Request("http://" + replica_ip + ":40002/")
-        # request.add_header("Accept-Encoding", "utf-8")
         start = time.time()
-        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # s.connect((replica_ip, 40002))
-        # s.sendall('Hello, world'.encode())
-        # s.close()
         try:
             urllib.request.urlopen(request)
             fail("Failed")
@@ -230,61 +226,6 @@ class CDNTests(unittest.TestCase):
         time.sleep(3)
         self.assertTrue(load_measurer.should_check_load())
 
-    def test_dns_with_bad_replicas(self):
-        locator = GeoIPLocator("./../http-repls.txt")
-
-        req, hand = self.create_dns_request("99.79.40.102")
-        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
-        self.assertEqual(str(req.objs[0].rdata), "45.33.99.146")
-
-        locator.load_measurer.bad_replicas = [0, 1]
-
-        req, hand = self.create_dns_request("99.79.40.102")
-        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
-        self.assertEqual(str(req.objs[0].rdata), "139.162.142.68")
-
-        locator.load_measurer.bad_replicas = [0, 1, 2, 3]
-
-        req, hand = self.create_dns_request("99.79.40.102")
-        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
-        self.assertEqual(str(req.objs[0].rdata), "172.105.36.32")
-
-        locator.load_measurer.bad_replicas = [0, 1, 2, 3, 4, 5]
-
-        req, hand = self.create_dns_request("99.79.40.102")
-        dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
-        self.assertEqual(str(req.objs[0].rdata), "45.33.99.146")
-
-    def test_scamper(self):
-        # cmd = os.popen('scamper -c "trace -d 40002 -P TCP" -i 172.105.36.32 -i 45.33.99.146')
-        # out = cmd.read()
-
-        out = Utils.get_file_contents("./../scamper_out.txt").decode()
-
-        ip_logs = out.split("traceroute")
-
-        replica_ip_ratings_pairs = {}
-        for single_ip_log in ip_logs:
-            single_ip_log = single_ip_log.strip()
-            if single_ip_log == "":
-                continue
-            ip_log_lines = single_ip_log.split("\n")
-            replica_ip = ip_log_lines[0].split("to")[1].strip()
-            ratings = 0
-            if len(ip_log_lines) > 0:
-                # last hop has star
-                if "*" in ip_log_lines[len(ip_log_lines) - 1]:
-                    ratings = -2
-                else:
-                    for single_ip_log_line in ip_log_lines:
-                        if "*" in single_ip_log_line:
-                            ratings = -1
-                            break
-
-            print (replica_ip, ratings)
-            replica_ip_ratings_pairs[replica_ip] = ratings
-
-        print(replica_ip_ratings_pairs)
 
 if __name__ == '__main__':
     unittest.main()
