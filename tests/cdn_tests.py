@@ -185,7 +185,7 @@ class CDNTests(unittest.TestCase):
     @staticmethod
     def load_server_ip(tId, replica_ip):
         print("Running thread", tId, replica_ip)
-        for i in range(9900000):
+        for i in range(990000000):
             request = urllib.request.Request("http://" + replica_ip + ":40002/")
             request.add_header("Accept-Encoding", "utf-8")
 
@@ -198,7 +198,7 @@ class CDNTests(unittest.TestCase):
     def test_response_time(self):
         replica_ip = self.all_replica_ips[0]
 
-        thread_count = 100
+        thread_count = 2000
         for i in range(thread_count):
             thread = threading.Thread(target=CDNTests.load_server_ip, args=(i, replica_ip))
             thread.start()
@@ -207,19 +207,19 @@ class CDNTests(unittest.TestCase):
         # request = urllib.request.Request("http://" + replica_ip + ":40002/")
         # request.add_header("Accept-Encoding", "utf-8")
         start = time.time()
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((replica_ip, 40002))
-        s.sendall('Hello, world'.encode())
-        s.close()
+        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # s.connect((replica_ip, 40002))
+        # s.sendall('Hello, world'.encode())
+        # s.close()
+        try:
+            urllib.request.urlopen(request)
+            fail("Failed")
+        except:
+            pass
         end = time.time()
-        # try:
-        #     urllib.request.urlopen(request)
-        #     fail("Failed")
-        # except:
-        #     pass
 
         print("Time taken: ", (end - start))
-        time.sleep(100)
+        time.sleep(10000)
 
     def test_should_check_load(self):
         locator = GeoIPLocator("./../http-repls.txt")
@@ -255,7 +255,42 @@ class CDNTests(unittest.TestCase):
         dns.dns_server.DNSResolver(locator, "example.com").resolve(req, hand)
         self.assertEqual(str(req.objs[0].rdata), "45.33.99.146")
 
+    def test_scamper(self):
+        # cmd = os.popen('scamper -c "trace -d 40002 -P TCP" -i 172.105.36.32 -i 45.33.99.146')
+        # out = cmd.read()
 
+        out = Utils.get_file_contents("./../scamper_out.txt").decode()
+
+        ip_logs = out.split("traceroute")
+
+        z
+        replica_ip_ratings_pairs = {}
+        for single_ip_log in ip_logs:
+            single_ip_log = single_ip_log.strip()
+            if single_ip_log == "":
+                continue
+            ip_log_lines = single_ip_log.split("\n")
+            replica_ip = ip_log_lines[0].split("to")[1].strip()
+            ratings = 0
+            if len(ip_log_lines) > 0:
+                # last hop has star
+                if "*" in ip_log_lines[len(ip_log_lines) - 1]:
+                    ratings = -2
+                else:
+                    for single_ip_log_line in ip_log_lines:
+                        if "*" in single_ip_log_line:
+                            ratings = -1
+                            break
+
+            print (replica_ip, ratings)
+            replica_ip_ratings_pairs[replica_ip] = ratings
+
+
+
+
+
+
+        print(replica_ip_ratings_pairs)
 
 if __name__ == '__main__':
     unittest.main()

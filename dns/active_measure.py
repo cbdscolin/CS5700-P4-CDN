@@ -1,3 +1,4 @@
+import os
 import time
 import urllib
 
@@ -11,55 +12,49 @@ class LoadMeasurer:
         self.initial_times = []
         self.current_times = []
         self.bad_replicas = []
-        for replica_ip in self.geo_ip_locator.replica_IPs:
-            request = urllib.request.Request("http://" + replica_ip + ":40002/")
-            request.add_header("Accept-Encoding", "utf-8")
 
-            start_time = time.time()
-            try:
-                urllib.request.urlopen(request, timeout=self.REQUEST_TIMEOUT_SECONDS)
-                continue
-            except:
-                pass
-            end_time = time.time()
-
-            self.initial_times.append((end_time - start_time))
-            self.current_times.append((end_time - start_time))
+        self.replica_ratings = {}
+        self.check_load()
 
         self.next_load_check_time = time.time() + self.load_check_interval_seconds
 
+    def check_load(self):
+        replica_ip_str = ""
+        for ip in self.geo_ip_locator.replica_IPs:
+            replica_ip_str += " -i " + ip
+        cmd = os.popen('scamper -c "trace -d 40002 -P TCP "' + replica_ip_str)
+        out = cmd.read()
+        cmd.close()
+        ip_logs = out.split("traceroute")
+        replica_ip_ratings_pairs = {}
+        for single_ip_log in ip_logs:
+            single_ip_log = single_ip_log.strip()
+            if single_ip_log == "":
+                continue
+            ip_log_lines = single_ip_log.split("\n")
+            replica_ip = ip_log_lines[0].split("to")[1].strip()
+            ratings = 0
+            if len(ip_log_lines) > 0:
+                # last hop has star
+                if "*" in ip_log_lines[len(ip_log_lines) - 1]:
+                    ratings = -2
+                else:
+                    for single_ip_log_line in ip_log_lines:
+                        if "*" in single_ip_log_line:
+                            ratings = -1
+                            break
+
+            replica_ip_ratings_pairs[replica_ip] = ratings
+
+        self.next_load_check_time = time.time() + self.load_check_interval_seconds
+
+        self.replica_ratings = replica_ip_ratings_pairs
+
     def should_check_load(self):
-        if self.geo_ip_locator.dns_location is None:
-            return False
         now_time = time.time()
         if now_time >= self.next_load_check_time:
             return True
         return False
-
-    def check_load_on_replicas(self):
-        self.next_load_check_time = time.time() + self.load_check_interval_seconds
-        for ii, replica_ip in enumerate(self.geo_ip_locator.replica_IPs):
-            request = urllib.request.Request("http://" + replica_ip + ":40002/")
-            request.add_header("Accept-Encoding", "utf-8")
-
-            start_time = time.time()
-            try:
-                urllib.request.urlopen(request)
-                continue
-            except:
-                pass
-            end_time = time.time()
-
-            time_taken = (end_time - start_time)
-
-            # Lower request time than the initially recorded time means this replica can do better than when the load
-            # was initially measured.
-            if self.initial_times[ii] > time_taken:
-                self.initial_times[ii] = time_taken
-
-            self.current_times[ii] = time_taken
-
-        self.update_bad_replicas()
 
     def is_load_higher_at_replica(self, replica_index):
         load_diff = float(self.current_times[replica_index] - self.initial_times[replica_index])
@@ -67,18 +62,11 @@ class LoadMeasurer:
             return True
         return False
 
-    def update_bad_replicas(self):
-        bad_replicas = []
-        for ii in range(len(self.geo_ip_locator.replica_IPs)):
-            if self.is_load_higher_at_replica(ii) is True:
-                bad_replicas.append(ii)
-        self.bad_replicas = bad_replicas
-
-    def get_bad_replicas(self):
+    def get_replica_ratings(self):
         if self.should_check_load() is True:
-            self.check_load_on_replicas()
+            self.check_load()
 
-        return self.bad_replicas
+        return self.replica_ratings
 
 
 

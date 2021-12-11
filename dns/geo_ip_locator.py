@@ -40,7 +40,8 @@ class GeoIPLocator:
         except:
             self.IP_locations = None
 
-        self.load_measurer = None
+        self.load_measurer = LoadMeasurer(self, 10)
+
 
     # Get geological location of the IP address passed.
     def get_IP_details(self, ip_address):
@@ -71,15 +72,33 @@ class GeoIPLocator:
 
         return res
 
-    def remove_bad_replicas_from_closest(self, distance_index_pairs):
-        if self.load_measurer is None:
-            self.load_measurer = LoadMeasurer(self, 300)
+    def remove_bad_replicas_helper(self, distance_index_pairs):
 
-        bad_replicas = self.load_measurer.get_bad_replicas()
+        replica_ip_ratings_pairs = self.load_measurer.get_replica_ratings()
+        print("initial print\n")
+        print(replica_ip_ratings_pairs)
+        print(self.load_measurer.replica_ratings)
         for _, index in distance_index_pairs:
-            if index not in bad_replicas:
-                return self.replica_IPs[index]
+
+            replica_at_index = self.replica_IPs[index]
+            print("First loop ", replica_at_index, " -  ", replica_ip_ratings_pairs[replica_at_index])
+
+            # If rating is zero use the closest
+            if replica_at_index in replica_ip_ratings_pairs and replica_ip_ratings_pairs[replica_at_index] == 0:
+                print("0 ratings: replica_at_index", replica_at_index)
+                return replica_at_index
+
+        for _, index in distance_index_pairs:
+            replica_at_index = self.replica_IPs[index]
+            # If rating is one use the closest
+            if replica_at_index in replica_ip_ratings_pairs and replica_ip_ratings_pairs[replica_at_index] == -1:
+                print("-1 ratings: ", replica_at_index)
+                return replica_at_index
+        print("-2 ratings ")
         return self.replica_IPs[distance_index_pairs[0][1]]
+
+    def remove_bad_replicas_from_closest(self, distance_index_pairs):
+        return self.remove_bad_replicas_helper(distance_index_pairs)
 
     # Get the closest replica to the IP address passed in the parameter.
     def get_closest_ip(self, source_ip):

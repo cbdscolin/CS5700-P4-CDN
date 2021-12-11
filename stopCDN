@@ -31,3 +31,33 @@ do
     printf "Stopped dns-server on : $ip_address\n\n"
 done
 
+
+for ip_address in $(cat $dns_file)
+do
+
+    if [[ -z "$ip_address" ]]; then
+      continue
+    fi
+
+    printf "Removed dns build directory in $ip_address\n"
+
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address rm -rf $dns_build_path ; do
+      sleep 1
+    done
+done
+
+
+for ip_address in $(cat $replica_file)
+do
+
+    if [[ -z "$ip_address" ]]; then
+      continue
+    fi
+
+    printf "Removing replica build directory in $ip_address\n"
+
+    until ssh -o "StrictHostKeyChecking no" -i  $keyfile $username@$ip_address rm -rf $replica_build_path ; do
+      sleep 1
+    done
+done
+
