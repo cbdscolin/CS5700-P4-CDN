@@ -41,7 +41,7 @@ do
 
     printf "Removed dns build directory in $ip_address\n"
 
-    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address rm -rf $dns_build_path ; do
+    until ssh -o "StrictHostKeyChecking no" -i $keyfile $username@$ip_address rm -rf $build_path ; do
       sleep 1
     done
 done
@@ -56,7 +56,7 @@ do
 
     printf "Removing replica build directory in $ip_address\n"
 
-    until ssh -o "StrictHostKeyChecking no" -i  $keyfile $username@$ip_address rm -rf $replica_build_path ; do
+    until ssh -o "StrictHostKeyChecking no" -i  $keyfile $username@$ip_address rm -rf $build_path ; do
       sleep 1
     done
 done
