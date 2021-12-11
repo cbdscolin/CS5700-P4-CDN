@@ -285,11 +285,6 @@ class CDNTests(unittest.TestCase):
             print (replica_ip, ratings)
             replica_ip_ratings_pairs[replica_ip] = ratings
 
-
-
-
-
-
         print(replica_ip_ratings_pairs)
 
 if __name__ == '__main__':

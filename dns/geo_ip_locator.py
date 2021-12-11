@@ -40,7 +40,7 @@ class GeoIPLocator:
         except:
             self.IP_locations = None
 
-        self.load_measurer = LoadMeasurer(self, 10)
+        self.load_measurer = LoadMeasurer(self, 60)
 
 
     # Get geological location of the IP address passed.

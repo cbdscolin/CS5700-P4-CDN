@@ -22,7 +22,7 @@ class LoadMeasurer:
         replica_ip_str = ""
         for ip in self.geo_ip_locator.replica_IPs:
             replica_ip_str += " -i " + ip
-        cmd = os.popen('scamper -c "trace -d 40002 -P TCP "' + replica_ip_str)
+        cmd = os.popen('timeout 7s scamper -c "trace -d 40002 -P TCP "' + replica_ip_str)
         out = cmd.read()
         cmd.close()
         ip_logs = out.split("traceroute")
@@ -45,6 +45,10 @@ class LoadMeasurer:
                             break
 
             replica_ip_ratings_pairs[replica_ip] = ratings
+
+        for rep_ip in self.geo_ip_locator.replica_IPs:
+            if rep_ip not in replica_ip_ratings_pairs:
+                replica_ip_ratings_pairs[rep_ip] = -2
 
         self.next_load_check_time = time.time() + self.load_check_interval_seconds
 
