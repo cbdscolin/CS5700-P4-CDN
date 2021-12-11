@@ -263,7 +263,6 @@ class CDNTests(unittest.TestCase):
 
         ip_logs = out.split("traceroute")
 
-        z
         replica_ip_ratings_pairs = {}
         for single_ip_log in ip_logs:
             single_ip_log = single_ip_log.strip()

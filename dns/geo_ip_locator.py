@@ -24,6 +24,14 @@ class GeoIPLocator:
         self.IP_locations = []
         self.client_to_replica_distances = {}
         self.dns_location = None
+        self.distance_to_replicas = []
+
+        try:
+            dns_ip = Utils.get_file_contents("./dns-hosts.txt").strip().decode()
+            dns_ip_details = self.get_IP_details(dns_ip)
+            self.dns_location = (dns_ip_details['latitude'], dns_ip_details['longitude'])
+        except Exception as ex:
+            print (ex)
 
         # Read all the replica IP addresses from the file on the server.
         for ip in Utils.get_file_contents(https_replica_file_location).decode().split("\n"):
@@ -39,6 +47,11 @@ class GeoIPLocator:
                 self.IP_locations.append((ip_details['latitude'], ip_details['longitude']))
         except:
             self.IP_locations = None
+
+        if self.dns_location is not None:
+            for replica_location in self.IP_locations:
+                dns_to_rep_distance = Utils.get_distance_between_coordinates(replica_location, self.dns_location)
+                self.distance_to_replicas.append(dns_to_rep_distance)
 
         self.load_measurer = LoadMeasurer(self, 60)
 
@@ -75,26 +88,21 @@ class GeoIPLocator:
     def remove_bad_replicas_helper(self, distance_index_pairs):
 
         replica_ip_ratings_pairs = self.load_measurer.get_replica_ratings()
-        print("initial print\n")
         print(replica_ip_ratings_pairs)
         print(self.load_measurer.replica_ratings)
         for _, index in distance_index_pairs:
 
             replica_at_index = self.replica_IPs[index]
-            print("First loop ", replica_at_index, " -  ", replica_ip_ratings_pairs[replica_at_index])
 
             # If rating is zero use the closest
             if replica_at_index in replica_ip_ratings_pairs and replica_ip_ratings_pairs[replica_at_index] == 0:
-                print("0 ratings: replica_at_index", replica_at_index)
                 return replica_at_index
 
         for _, index in distance_index_pairs:
             replica_at_index = self.replica_IPs[index]
             # If rating is one use the closest
             if replica_at_index in replica_ip_ratings_pairs and replica_ip_ratings_pairs[replica_at_index] == -1:
-                print("-1 ratings: ", replica_at_index)
                 return replica_at_index
-        print("-2 ratings ")
         return self.replica_IPs[distance_index_pairs[0][1]]
 
     def remove_bad_replicas_from_closest(self, distance_index_pairs):
@@ -115,7 +123,7 @@ class GeoIPLocator:
             # Calculate the distance between source & destination.
             cur_dis = Utils.get_distance_between_coordinates(source_ip_location, dest_ip_loc)
             distances.append((cur_dis, ii))
-
+        print (distances)
         distances = sorted(distances)
         self.client_to_replica_distances[source_ip] = (time.time(), distances)
         if len(self.client_to_replica_distances.keys()) > 1000:

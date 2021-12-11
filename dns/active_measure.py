@@ -46,9 +46,17 @@ class LoadMeasurer:
 
             replica_ip_ratings_pairs[replica_ip] = ratings
 
-        for rep_ip in self.geo_ip_locator.replica_IPs:
-            if rep_ip not in replica_ip_ratings_pairs:
-                replica_ip_ratings_pairs[rep_ip] = -2
+        for rep_index, rep_id in enumerate(self.geo_ip_locator.replica_IPs):
+            if rep_id not in replica_ip_ratings_pairs:
+                # If there is no distance information between dns and replica then assume the replica is working
+                if rep_index >= len(self.geo_ip_locator.distance_to_replicas):
+                    replica_ip_ratings_pairs[rep_id] = 0
+                # If the replica is far away from the dns server then assume its up and running
+                elif self.geo_ip_locator.distance_to_replicas[rep_index] > 12000:
+                    replica_ip_ratings_pairs[rep_id] = 0
+                # If the replica is close by and there is no output in scamper assume its down.
+                else:
+                    replica_ip_ratings_pairs[rep_id] = -2
 
         self.next_load_check_time = time.time() + self.load_check_interval_seconds
 
