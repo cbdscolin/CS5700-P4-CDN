@@ -23,7 +23,7 @@ replica_source_files=(httpserver utils $replica_cache_folder replica)
 
 # Insert the files and directories that have to be uploaded to the dns server here.
 declare -a dns_source_files
-dns_source_files=(dnsserver utils http-repls.txt dns)
+dns_source_files=(dnsserver utils http-repls.txt dns dns-hosts.txt)
 
 
 echo "PORT = $port"

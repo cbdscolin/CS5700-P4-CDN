@@ -1,8 +1,12 @@
 import os
+import threading
+import time
 import unittest
 import urllib
+import socket
 from urllib.error import HTTPError, URLError
 
+from dns.active_measure import LoadMeasurer
 from dns.dns_server import DNSResolver
 import dns.dns_server
 from dns.geo_ip_locator import GeoIPLocator
@@ -52,6 +56,7 @@ class CDNTests(unittest.TestCase):
         dns_handler = DNSH()
         return dns_request, dns_handler
 
+    @unittest.skip("Skipping test ")  # Uncomment this to run this test case.
     def test_dns_response(self):
         locator = GeoIPLocator("./../http-repls.txt")
 
@@ -140,7 +145,7 @@ class CDNTests(unittest.TestCase):
             except HTTPError as ex:
                 self.assertEqual(ex.code, 404)
 
-    @unittest.skip("Skipping test that downloads all pages") # Uncomment this to run this test case.
+    @unittest.skip("Skipping test that downloads all pages")  # Uncomment this to run this test case.
     def test_download_all_pages(self):
         all_pages_list = Utils.get_file_contents("./test_resources/pageviews.csv").decode().split("\r\n")
         for page_no, line in enumerate(all_pages_list):
@@ -178,6 +183,48 @@ class CDNTests(unittest.TestCase):
             except URLError as ex:
                 self.assertTrue(ex.reason.strerror, "Connection refused")
 
+    @staticmethod
+    def load_server_ip(tId, replica_ip):
+        print("Running thread", tId, replica_ip)
+        for i in range(990000000):
+            request = urllib.request.Request("http://" + replica_ip + ":40002/")
+            request.add_header("Accept-Encoding", "utf-8")
+
+            try:
+                urllib.request.urlopen(request)
+            except:
+                pass
+        print("thread ", tId, " completed")
+
+    @unittest.skip("Skip load test")
+    def test_response_time(self):
+        replica_ip = self.all_replica_ips[0]
+
+        thread_count = 2000
+        for i in range(thread_count):
+            thread = threading.Thread(target=CDNTests.load_server_ip, args=(i, replica_ip))
+            thread.start()
+        time.sleep(6)
+
+        start = time.time()
+        try:
+            urllib.request.urlopen(request)
+            fail("Failed")
+        except:
+            pass
+        end = time.time()
+
+        print("Time taken: ", (end - start))
+        time.sleep(10000)
+
+    def test_should_check_load(self):
+        locator = GeoIPLocator("./../http-repls.txt")
+        load_measurer = LoadMeasurer(locator, 4)
+        self.assertFalse(load_measurer.should_check_load())
+        time.sleep(2)
+        self.assertFalse(load_measurer.should_check_load())
+        time.sleep(3)
+        self.assertTrue(load_measurer.should_check_load())
 
 
 if __name__ == '__main__':
